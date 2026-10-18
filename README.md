@@ -105,7 +105,7 @@ The script authenticates to Vault, retrieves the key at runtime, and never write
 ## Usage
 
 ```bash
-python threat-o-rizer.py
+python illuduimQ64.py
 ```
 
 Paste your raw threat intelligence when prompted, then type `END` on a new line to submit.
