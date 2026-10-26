@@ -1,0 +1,5 @@
+Privilege escalation path observed around Neo4j GraphRAG (synthetic):
+Lower account: graphrag.reader (read-only Neo4j role / standard domain user on ANALYST-WS07)
+TTP: T1003 OS Credential Dumping (Mimikatz-class) on workstation; T1078 Valid Accounts into Bolt/Browser;
+MCP tool misuse tied to CVE-2025-10193 (DNS rebinding) enabling stronger graph operations
+Higher account: graphrag.admin / neo4j admin (write + admin procedures on neo4j-prod-01)

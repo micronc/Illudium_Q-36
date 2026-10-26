@@ -1,0 +1,2 @@
+Additional note: Suspected lateral use of stolen Neo4j/ops creds from ANALYST-WS07 toward neo4j-prod-01 (Bolt 7687).
+GraphRAG answers briefly diverged from known-good topology — possible poisoned nodes in the Neo4j store.

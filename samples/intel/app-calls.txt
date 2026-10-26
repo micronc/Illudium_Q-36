@@ -1,0 +1,5 @@
+Application / communication path (synthetic):
+User browser -> Spoofed helpdesk page (credential phishing)
+-> Dropper on FINANCE-WS03
+-> HTTPS beacon to C2 185.234.10.22 (T1071)
+-> Auth to Domain Controller with stolen creds

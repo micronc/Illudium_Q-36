@@ -1,0 +1,4 @@
+Observed network path (synthetic demo):
+Internet -> Edge Firewall / ASA-FTD -> Core Router -> L3 Switch -> Access Switch -> FINANCE-WS03
+C2 beacon from FINANCE-WS03 to 185.234.10.22 over HTTPS (T1071).
+DC / AD reachable from campus via Core Router. Internet-facing Apache 2.4.x behind WAF (CVE-2024-1234).

@@ -1,0 +1,3 @@
+Analyst note (synthetic): Users reported credential prompts spoofed as IT helpdesk Friday AM.
+Several GraphRAG operators said the assistant started citing unfamiliar Neo4j nodes after MCP client updates.
+Confirm whether ANALYST-WS07 is speaking to neo4j-prod-01 via neo4j-cypher-mcp@0.3.0 and whether CVE-2025-10193 exposure applies.

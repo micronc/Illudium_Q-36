@@ -1,0 +1,7 @@
+Application / communication path (synthetic Neo4j GraphRAG):
+User browser -> Spoofed helpdesk page (credential phishing)
+-> MCP client on ANALYST-WS07 (neo4j-cypher-mcp@0.3.0)
+-> Cypher tool call to Neo4j Bolt neo4j-prod-01:7687
+-> Graph query / write against GraphRAG nodes
+-> Assistant cites returned Neo4j properties in chat
+Optional: MCP client also polls neo4j-mcp-sync.example over HTTPS.

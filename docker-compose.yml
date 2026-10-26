@@ -1,0 +1,70 @@
+# Illudium-Q36 — local / shared Compose definition
+# Works the same shape on developer laptops, AWS (ECS/EKS), and GCP (GKE / Cloud Run via image).
+#
+# Quick start (demo, no API key):
+#   DEMO_MODE=true docker compose up --build
+#
+# With secrets from .env:
+#   cp .env.example .env   # set ANTHROPIC_API_KEY / FLASK_SECRET_KEY
+#   docker compose up --build
+#
+# Cloud: build/push this image, then inject the same env vars from
+# AWS Secrets Manager / SSM or GCP Secret Manager (see docs/DOCKER.md).
+
+services:
+  illudium-q36:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_SHA: ${BUILD_SHA:-unknown}
+    image: ${ILLUDIUM_IMAGE:-illudium-q36:local}
+    container_name: illudium-q36
+    ports:
+      - "${HOST_PORT:-8080}:8080"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8080"
+      # Prefer explicitly set compose env; fall back to empty / false defaults.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-4-6}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-change-me-in-production}
+      USE_VAULT: ${USE_VAULT:-false}
+      VAULT_ADDR: ${VAULT_ADDR:-}
+      VAULT_TOKEN: ${VAULT_TOKEN:-}
+      # Keep 1 worker per replica so in-memory chat history stays coherent.
+      # Scale with sticky affinity: docker-compose.sticky.yml (+ load balancer stickiness in cloud).
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
+      MAX_CONTENT_LENGTH: ${MAX_CONTENT_LENGTH:-16777216}
+      # USD allocated to this API key (optional; can also be set in the UI)
+      API_BUDGET_USD: ${API_BUDGET_USD:-}
+      SPEND_LEDGER_PATH: /app/briefings/.illudium_api_spend.json
+      # Optional Whisper keys for Firefox voice (MediaRecorder → /api/transcribe)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    volumes:
+      # Persist analyst uploads and generated briefings outside the container.
+      - illudium_intel:/app/intel
+      - illudium_briefings:/app/briefings
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    # Uncomment on Docker Swarm / some cloud overlays if you need resource caps:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "1.0"
+    #       memory: 1G
+
+volumes:
+  illudium_intel:
+  illudium_briefings:

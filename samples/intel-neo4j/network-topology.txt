@@ -1,0 +1,6 @@
+Observed Neo4j / GraphRAG path (synthetic, Cisco-style roles for diagramming):
+Internet -> Edge Firewall / ASA-FTD -> Core Router -> L3 Switch -> Access Switch -> ANALYST-WS07
+ANALYST-WS07 -> (HTTPS) neo4j-mcp-sync.example
+ANALYST-WS07 -> Bolt 7687 -> neo4j-prod-01 (Neo4j GraphRAG DC node)
+Browser users also hit Neo4j Browser on 7474 behind WAF.
+C2-style beacon note: 203.0.113.44 seen from ANALYST-WS07 after phishing (synthetic TEST-NET).

@@ -1,0 +1,32 @@
+# Sticky affinity overlay for multi-replica deploys.
+# Each app replica runs a single Gunicorn worker; nginx ip_hash pins clients.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.sticky.yml up --build --scale illudium-q36=2
+#
+# Local single-replica use does not need this file — WEB_CONCURRENCY=1 is enough.
+
+services:
+  illudium-q36:
+    environment:
+      WEB_CONCURRENCY: "1"
+    # Published only on the internal network; nginx is the entrypoint.
+    ports: !reset []
+    expose:
+      - "8080"
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: illudium-nginx
+    depends_on:
+      - illudium-q36
+    ports:
+      - "${HOST_PORT:-8080}:8080"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped

@@ -1,0 +1,12 @@
+type,value,notes
+ip,203.0.113.44,Synthetic C2 / staging (TEST-NET-3)
+domain,neo4j-mcp-sync.example,MCP sync / lure host (synthetic)
+email,it-helpdesk@corp.example,Spoofed helpdesk phishing sender
+sha256,4e8f1a2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef123456,Dropper hash (synthetic)
+user_agent,neo4j-cypher-mcp/0.3.0,MCP client UA string
+cve,CVE-2025-10193,Neo4j Cypher MCP DNS rebinding
+host,neo4j-prod-01,Neo4j GraphRAG cluster node
+port,7687,Bolt
+port,7474,Neo4j Browser
+account,graphrag.reader,Lower privilege Neo4j role
+account,graphrag.admin,Higher privilege Neo4j role

@@ -1,0 +1,9 @@
+# Optional overlay: run without an Anthropic key (sample briefings / chat).
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build
+
+services:
+  illudium-q36:
+    environment:
+      DEMO_MODE: "true"
+    ports:
+      - "${HOST_PORT:-8080}:8080"

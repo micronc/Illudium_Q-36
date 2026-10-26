@@ -1,0 +1,1 @@
+Suspected lateral movement via SMB on host FINANCE-WS03. Related to CVE-2024-1234 campaign.

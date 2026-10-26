@@ -1,0 +1,4 @@
+Privilege escalation path observed on FINANCE-WS03:
+Lower account: finance.user (standard domain user)
+TTP: T1003 OS Credential Dumping (Mimikatz); also T1078 Valid Accounts
+Higher account: Domain Admin (DA group)

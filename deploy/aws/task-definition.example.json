@@ -1,0 +1,57 @@
+{
+  "family": "illudium-q36",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/illudiumTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "illudium-q36",
+      "image": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/illudium-q36:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "HOST", "value": "0.0.0.0" },
+        { "name": "PORT", "value": "8080" },
+        { "name": "DEMO_MODE", "value": "false" },
+        { "name": "WEB_CONCURRENCY", "value": "1" }
+      ],
+      "secrets": [
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:illudium/anthropic_api_key"
+        },
+        {
+          "name": "FLASK_SECRET_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:illudium/flask_secret_key"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/healthz || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 20
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/illudium-q36",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

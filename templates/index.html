@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Illudium-Q36 · Analyst Console</title>
+  <script>
+    /* Apply saved Section 508 mode before paint to avoid a flash of default theme */
+    (function () {
+      try {
+        if (localStorage.getItem("illudium-a11y-508") === "1") {
+          document.documentElement.setAttribute("data-a11y", "508");
+        }
+      } catch (_) { /* ignore */ }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Libre+Franklin:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/app.css?v={{ static_v }}" />
+</head>
+<body>
+  <a class="skip-link" href="#main-chat">Skip to analyst chat</a>
+  <a class="skip-link skip-link-secondary" href="#keyboard-help">Skip to keyboard help</a>
+  <div class="app">
+    <header class="topbar" role="banner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1>Illudium-Q36</h1>
+          <p class="tagline">Analyst console · ATT&amp;CK / ATLAS · text &amp; voice</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <label class="a11y-toggle" title="High contrast, larger text, and stronger focus for Section 508 / VPAT-oriented use">
+          <input type="checkbox" id="a11y-508-toggle" />
+          <span>508 Mode</span>
+        </label>
+        <button type="button" id="btn-a11y-help" class="btn btn-ghost" aria-haspopup="dialog" aria-controls="keyboard-help">
+          Keyboard help
+        </button>
+        <div class="storage-meter" title="Session storage usage">
+          <span id="storage-label" class="meta">Storage —</span>
+          <progress id="storage-progress" max="100" value="0" aria-label="Session storage used"></progress>
+        </div>
+        <button type="button" id="btn-briefing" class="btn btn-accent">Generate briefing</button>
+        <button type="button" id="btn-report" class="btn btn-secondary">Create report</button>
+        <button type="button" id="btn-clear" class="btn btn-ghost">Clear chat</button>
+      </div>
+    </header>
+    <p id="a11y-announce" class="sr-only" role="status" aria-live="polite"></p>
+    <p id="a11y-assertive" class="sr-only" role="alert" aria-live="assertive"></p>
+
+    <div id="storage-limit-dialog" class="a11y-help" role="dialog" aria-modal="true" aria-labelledby="storage-limit-title" hidden>
+      <div class="a11y-help-card">
+        <h2 id="storage-limit-title">Session storage limit</h2>
+        <p>
+          How much session storage may this analysis use (chat history + intel corpus)?
+          When the limit is reached you will get a detailed capture, a continuation prompt,
+          and the option to export a compressed session package.
+        </p>
+        <label for="storage-limit-input">Limit (megabytes)</label>
+        <input id="storage-limit-input" type="number" min="1" max="100" step="1" value="5" />
+        <p class="hint-inline">Default 5 MB. Allowed range 1–100 MB.</p>
+        <div class="dialog-actions">
+          <button type="button" id="btn-storage-limit-save" class="btn btn-accent">Save limit</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="api-budget-dialog" class="a11y-help" role="dialog" aria-modal="true" aria-labelledby="api-budget-title" hidden>
+      <div class="a11y-help-card">
+        <h2 id="api-budget-title">API key budget</h2>
+        <p>
+          How much USD did you allocate / load onto this Anthropic API key?
+          Illudium tracks estimated spend from token usage against that allocation
+          (Anthropic does not expose remaining credit balance on a normal API key).
+        </p>
+        <label for="api-budget-input">Allocated budget (USD)</label>
+        <input id="api-budget-input" type="number" min="0" max="1000000" step="0.01" value="25" />
+        <p class="hint-inline">Example: if you topped up $25, enter 25. You can change this later via the cost meter.</p>
+        <div class="dialog-actions">
+          <button type="button" id="btn-api-budget-save" class="btn btn-accent">Save budget</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="report-format-dialog" class="a11y-help" role="dialog" aria-modal="true" aria-labelledby="report-format-title" hidden>
+      <div class="a11y-help-card">
+        <h2 id="report-format-title">Create report</h2>
+        <p>Generate an analyst report from the loaded intel (includes Mermaid diagrams when applicable).</p>
+        <label for="report-format">Format</label>
+        <select id="report-format">
+          <option value="md">Markdown (.md)</option>
+          <option value="pdf">PDF (.pdf)</option>
+          <option value="docx">Word (.docx)</option>
+        </select>
+        <label class="toggle" style="margin-top:0.75rem">
+          <input type="checkbox" id="report-regenerate" checked />
+          Regenerate with current model (uses tokens)
+        </label>
+        <div class="dialog-actions">
+          <button type="button" id="btn-report-download" class="btn btn-accent">Download</button>
+          <button type="button" id="btn-report-cancel" class="btn btn-ghost">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="storage-capture-dialog" class="a11y-help" role="dialog" aria-modal="true" aria-labelledby="storage-capture-title" hidden>
+      <div class="a11y-help-card capture-card">
+        <h2 id="storage-capture-title">Session storage limit reached</h2>
+        <p id="storage-capture-summary"></p>
+        <h3>Continuation prompt (summary + next steps)</h3>
+        <textarea id="storage-capture-prompt" rows="12" readonly aria-label="Continuation prompt"></textarea>
+        <div class="dialog-actions">
+          <button type="button" id="btn-save-prompt" class="btn btn-accent">Save prompt</button>
+          <button type="button" id="btn-export-session" class="btn btn-secondary">Export session (.zip)</button>
+          <button type="button" id="btn-capture-close" class="btn btn-ghost">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="anonymize-dialog" class="a11y-help" role="dialog" aria-modal="true" aria-labelledby="anonymize-title" hidden>
+      <div class="a11y-help-card">
+        <h2 id="anonymize-title">Upload anonymization</h2>
+        <p id="anonymize-warning"></p>
+        <p id="anonymize-summary" class="hint-inline"></p>
+        <ul id="anonymize-replacements" class="file-list" aria-label="Replacements applied" hidden></ul>
+        <div class="dialog-actions">
+          <button type="button" id="btn-anonymize-ok" class="btn btn-accent">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="keyboard-help"
+      class="a11y-help"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="keyboard-help-title"
+      hidden
+    >
+      <div class="a11y-help-card">
+        <h2 id="keyboard-help-title">Keyboard help for blind researchers</h2>
+        <p>
+          Use a screen reader (NVDA, JAWS, or VoiceOver) plus these Illudium shortcuts.
+          See <code>docs/ACCESSIBILITY.md</code> for setup.
+        </p>
+        <ul>
+          <li><kbd>Alt</kbd> + <kbd>R</kbd> — Read last assistant answer / briefing aloud</li>
+          <li><kbd>Alt</kbd> + <kbd>A</kbd> — Read ATT&amp;CK ↔ ATLAS panel aloud</li>
+          <li><kbd>Alt</kbd> + <kbd>I</kbd> — Read intel file list aloud</li>
+          <li><kbd>Alt</kbd> + <kbd>S</kbd> or <kbd>Esc</kbd> — Stop speech</li>
+          <li><kbd>Alt</kbd> + <kbd>1</kbd> — Focus intel corpus</li>
+          <li><kbd>Alt</kbd> + <kbd>2</kbd> — Focus chat messages</li>
+          <li><kbd>Alt</kbd> + <kbd>3</kbd> — Focus message box</li>
+          <li><kbd>Alt</kbd> + <kbd>/</kbd> — Open or close this help</li>
+        </ul>
+        <button type="button" id="btn-a11y-help-close" class="btn btn-accent">Close help</button>
+      </div>
+    </div>
+
+    <main class="workspace">
+      <aside id="intel-panel" class="panel intel-panel" aria-labelledby="intel-heading" tabindex="-1">
+        <div class="panel-head">
+          <h2 id="intel-heading">Intel corpus</h2>
+          <span id="file-count" class="meta">0 files</span>
+        </div>
+
+        <form id="upload-form" class="upload-zone">
+          <label class="drop-label" for="file-input">
+            <strong>Drop files</strong> or click to add
+            <span class="hint">.txt .md .csv .json .log .yaml · multiple OK</span>
+          </label>
+          <input id="file-input" name="files" type="file" multiple accept=".txt,.md,.csv,.json,.log,.xml,.yaml,.yml,.ioc,.stix" />
+        </form>
+
+        <div class="paste-block">
+          <label for="paste-name">Add pasted intel</label>
+          <input id="paste-name" type="text" placeholder="filename.txt" autocomplete="off" />
+          <textarea id="paste-text" rows="4" placeholder="Paste CVEs, IOCs, report excerpts…"></textarea>
+          <button type="button" id="btn-paste" class="btn btn-secondary">Add to corpus</button>
+        </div>
+
+        <ul id="file-list" class="file-list" aria-live="polite" aria-label="Loaded intel files"></ul>
+        <p id="intel-status" class="status" role="status"></p>
+
+        <div id="atlas-panel" class="atlas-panel" hidden tabindex="-1" aria-labelledby="atlas-heading">
+          <div class="atlas-head">
+            <h3 id="atlas-heading">ATT&amp;CK ↔ ATLAS</h3>
+            <a id="atlas-link" href="https://atlas.mitre.org/" target="_blank" rel="noopener">MITRE ATLAS</a>
+          </div>
+          <p id="atlas-note" class="atlas-note"></p>
+          <div class="atlas-cols">
+            <div class="atlas-col">
+              <h4 id="atlas-attack-heading">ATT&amp;CK only</h4>
+              <ul id="atlas-attack-only" aria-labelledby="atlas-attack-heading"></ul>
+            </div>
+            <div class="atlas-col overlap">
+              <h4 id="atlas-overlap-heading">Overlap</h4>
+              <ul id="atlas-overlap" aria-labelledby="atlas-overlap-heading"></ul>
+            </div>
+            <div class="atlas-col">
+              <h4 id="atlas-only-heading">ATLAS only</h4>
+              <ul id="atlas-atlas-only" aria-labelledby="atlas-only-heading"></ul>
+            </div>
+          </div>
+          <button type="button" id="btn-read-atlas" class="btn btn-secondary btn-read-section">
+            Read ATLAS panel aloud
+          </button>
+        </div>
+      </aside>
+
+      <section id="main-chat" class="panel chat-panel" aria-labelledby="chat-heading">
+        <div class="panel-head">
+          <h2 id="chat-heading">Analyst chat</h2>
+          <div class="voice-status">
+            <span id="voice-badge" class="badge">Voice ready</span>
+          </div>
+        </div>
+
+        <div class="model-cost-bar">
+          <label for="model-select">
+            Model
+            <select id="model-select" aria-label="Claude model"></select>
+          </label>
+          <div id="cost-meter" class="cost-meter" aria-live="polite" title="Token usage and API-key budget">
+            Tokens <strong id="token-count">0</strong>
+            <span class="cost-detail">(in <strong id="token-in">0</strong> / out <strong id="token-out">0</strong>)</span>
+            · Session <strong id="cost-usd">$0.0000</strong>
+            · Key <strong id="budget-spent">$0.00</strong>
+            / <strong id="budget-total">—</strong>
+            <span class="cost-detail">(left <strong id="budget-remaining">—</strong>)</span>
+            <button type="button" id="btn-edit-budget" class="btn-link" title="Set API key budget">Budget</button>
+          </div>
+        </div>
+
+        <div class="chat-toolbar" role="toolbar" aria-label="Chat accessibility actions">
+          <button type="button" id="btn-read-last" class="btn btn-secondary btn-read-section">
+            Read last answer aloud
+          </button>
+          <button type="button" id="btn-stop-speech" class="btn btn-ghost btn-read-section">
+            Stop speech
+          </button>
+        </div>
+
+        <div id="messages" class="messages" aria-live="polite" tabindex="-1"></div>
+
+        <form id="chat-form" class="composer">
+          <button type="button" id="btn-mic" class="btn-mic" title="Hold or click to talk" aria-pressed="false" aria-label="Voice input">
+            <span class="mic-icon" aria-hidden="true"></span>
+            <span class="sr-only">Voice input</span>
+          </button>
+          <label class="sr-only" for="chat-input">Chat message</label>
+          <textarea
+            id="chat-input"
+            rows="2"
+            placeholder="Ask about the loaded intel… (Enter to send, Shift+Enter for newline)"
+            autocomplete="off"
+          ></textarea>
+          <div class="composer-actions">
+            <label class="toggle">
+              <input type="checkbox" id="speak-replies" />
+              Speak replies
+            </label>
+            <button type="submit" id="btn-send" class="btn btn-accent">Send</button>
+          </div>
+        </form>
+        <p id="chat-status" class="status" role="status"></p>
+      </section>
+    </main>
+  </div>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "dark",
+      securityLevel: "loose",
+      flowchart: { htmlLabels: true },
+    });
+    window.__illudiumMermaid = mermaid;
+  </script>
+  <script src="/static/js/app.js?v={{ static_v }}"></script>
+</body>
+</html>
